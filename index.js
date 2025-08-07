@@ -7,11 +7,7 @@ const Note = require("./models/note")
 
 const mongoose = require('mongoose')
 
-
-
-// DO NOT SAVE YOUR PASSWORD TO GITHUB!!
-const password = process.argv[2]
-const url = `mongodb+srv://nikhil:${password}@cluster0.cfpq3ev.mongodb.net/noteApp?retryWrites=true&w=majority&appName=Cluster0`
+const url = process.env.MONGODB_URI
 
 mongoose.set('strictQuery', false)
 mongoose.connect(url)
@@ -28,8 +24,6 @@ noteSchema.set("toJSON", {
     delete returnedObject.__v
   }
 })
-
-const Note = mongoose.model('Note', noteSchema)
 
 const app = express()
 
@@ -66,21 +60,10 @@ app.get('/api/notes', (request, response) => {
 })
 
 app.get('/api/notes/:id', (request, response) => {
-  const id = request.params.id
-  const note = notes.find((note) => note.id === id)
-
-  if (note) {
+  Note.findById(request.params.id).then(note => {
     response.json(note)
-  } else {
-    response.status(404).end()
-  }
+  })
 })
-
-const generateId = () => {
-  const maxId =
-    notes.length > 0 ? Math.max(...notes.map((n) => Number(n.id))) : 0
-  return String(maxId + 1)
-}
 
 app.post('/api/notes', (request, response) => {
   const body = request.body
@@ -91,18 +74,17 @@ app.post('/api/notes', (request, response) => {
     })
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
-    important: body.important || false,
-    id: generateId(),
-  }
+    important: body.important || false
+  })
 
-  notes = notes.concat(note)
-
-  response.json(note)
+  note.save().then(savedNote => {
+    response.json(savedNote)
+  })
 })
 
-app.put("/api/notes/:id", (request, response) => {
+/*app.put("/api/notes/:id", (request, response) => {
   const id = request.params.id
   const body = request.body
 
@@ -128,7 +110,7 @@ app.delete('/api/notes/:id', (request, response) => {
 
   response.status(204).end()
 })
-
+*/
 const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
