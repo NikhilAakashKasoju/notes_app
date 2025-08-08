@@ -49,23 +49,30 @@ let notes = [
 
 app.use(express.json())
 
-app.get('/', (request, response) => {
+app.get('/', (request, response, next) => {
   response.send('<h1>Hello World!</h1>')
 })
+  .catch(error => next(error))
 
-app.get('/api/notes', (request, response) => {
+app.get('/api/notes', (request, response, next) => {
   Note.find({}).then(notes => {
     response.json(notes)
   })
+    .caatch(error => next(error))
 })
 
-app.get('/api/notes/:id', (request, response) => {
+app.get('/api/notes/:id', (request, response, next) => {
   Note.findById(request.params.id).then(note => {
-    response.json(note)
+    if (note) {
+      response.json(note)
+    } else {
+      response.status(500).end()
+    }
   })
+    .catch(error => next(error))
 })
 
-app.post('/api/notes', (request, response) => {
+app.post('/api/notes', (request, response, nextno) => {
   const body = request.body
 
   if (!body.content) {
@@ -82,6 +89,7 @@ app.post('/api/notes', (request, response) => {
   note.save().then(savedNote => {
     response.json(savedNote)
   })
+    .catch(error => next(error))
 })
 
 /*app.put("/api/notes/:id", (request, response) => {
@@ -111,6 +119,28 @@ app.delete('/api/notes/:id', (request, response) => {
   response.status(204).end()
 })
 */
+
+app.delete("/api/notes/:id", (request, response, next) => {
+  Person.findByIdDelete(request.params.id)
+    .then(result => {
+      response.status(200).end()
+    })
+    .catch(error => next(error))
+})
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+
+  next(error)
+}
+
+// this has to be the last loaded middleware, also all the routes should be registered before this!
+app.use(errorHandler)
+
 const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
