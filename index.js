@@ -2,6 +2,11 @@
 require("dotenv").config()
 
 const express = require('express')
+const app = express()
+app.use(express.static("dist"))
+app.use(express.json())
+
+
 const Note = require("./models/note")
 
 
@@ -25,40 +30,16 @@ noteSchema.set("toJSON", {
   }
 })
 
-const app = express()
-
-app.use(express.static("dist"))
-
-let notes = [
-  {
-    id: '1',
-    content: 'HTML is easy',
-    important: true,
-  },
-  {
-    id: '2',
-    content: 'Browser can execute only JavaScript',
-    important: false,
-  },
-  {
-    id: '3',
-    content: 'GET and POST are the most important methods of HTTP protocol',
-    important: true,
-  },
-]
-
-app.use(express.json())
 
 app.get('/', (request, response, next) => {
   response.send('<h1>Hello World!</h1>')
 })
-  .catch(error => next(error))
 
 app.get('/api/notes', (request, response, next) => {
   Note.find({}).then(notes => {
     response.json(notes)
   })
-    .caatch(error => next(error))
+    .catch(error => next(error))
 })
 
 app.get('/api/notes/:id', (request, response, next) => {
@@ -92,36 +73,8 @@ app.post('/api/notes', (request, response, nextno) => {
     .catch(error => next(error))
 })
 
-/*app.put("/api/notes/:id", (request, response) => {
-  const id = request.params.id
-  const body = request.body
-
-  const noteIndex = notes.findIndex(n => n.id === id)
-  if (noteIndex === -1) {
-    return request.status(404).json({ error: "note not found" })
-  }
-
-  const updatedNote = {
-    ...notes[noteIndex],
-    content: body.content,
-    important: body.important
-  }
-
-  notes[noteIndex] = updatedNote
-
-  response.json(updatedNote)
-})
-
-app.delete('/api/notes/:id', (request, response) => {
-  const id = request.params.id
-  notes = notes.filter((note) => note.id !== id)
-
-  response.status(204).end()
-})
-*/
-
 app.delete("/api/notes/:id", (request, response, next) => {
-  Person.findByIdDelete(request.params.id)
+  Note.findByIdDelete(request.params.id)
     .then(result => {
       response.status(200).end()
     })
